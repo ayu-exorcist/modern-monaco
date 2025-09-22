@@ -107,8 +107,15 @@ function loadTMTheme(src: string | URL, cdn = "https://esm.sh") {
       `Invalid theme ID: ${src}, please ensure the theme ID is one of the following: ${Array.from(shikiThemeIds.keys()).join(", ")}`,
     );
   }
-  const url = new URL(`/tm-themes@${tmThemesVersion}/themes/${src}.json`, cdn);
-  return cache.fetch(url).then((res) => res.json());
+  if (typeof src === "string" && shikiThemeIds.has(src)) {
+    const url = new URL(`/tm-themes@${tmThemesVersion}/themes/${src}.json`, cdn);
+    return cache.fetch(url).then((res) => res.json());
+  }
+  const url = typeof src === "string" ? new URL(src, globalThis.location?.href) : src;
+  if (url.protocol === "http:" || url.protocol === "https:") {
+    return cache.fetch(url).then((res) => res.json());
+  }
+  throw new Error(`Unsupported theme source: ${src}`);
 }
 
 /** Load a TextMate grammar from the given source. */
@@ -116,9 +123,8 @@ function loadTMGrammar(src: string | URL, cdn = "https://esm.sh") {
   if (isUrlOrPathname(src)) {
     return cache.fetch(src).then((res) => res.json());
   }
-  const g = grammars.find(g => g.name === src);
-  if (g) {
-    const url = new URL(`/tm-grammars@${tmGrammarsVersion}/grammars/${g.name}.json`, cdn);
+  const url = typeof src === "string" ? new URL(src, globalThis.location?.href) : src;
+  if (url.protocol === "http:" || url.protocol === "https:") {
     return cache.fetch(url).then((res) => res.json());
   }
   throw new Error(`Unsupported grammar source: ${src}`);
